@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <title>AI Resume Analyzer</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        
+        input[type="file"] {
+            margin-top: 15px;
+        }
+        
+        .btn {
+            padding: 10px 15px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .analyze-btn {
+            background: #28a745;
+        }
+        
+        .upload-btn {
+            background: #007bff;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+        }
+        
+        #output {
+            margin-top: 20px;
+        }
+        
+        .card {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-top: 12px;
+            border-radius: 10px;
+        }
+        
+        .suggestions {
+            margin-top: 20px;
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .loading {
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+    ```
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        ```
+        <h1>🚀 AI Resume Analyzer</h1>
+
+        <label><b>Paste your resume:</b></label>
+        <textarea id="resume" rows="6" placeholder="Paste your resume here..."></textarea>
+
+        <button class="btn analyze-btn" onclick="analyze()">Analyze Text</button>
+
+        <hr>
+
+        <label><b>Or upload PDF resume:</b></label>
+        <input type="file" id="fileInput">
+        <br>
+        <button class="btn upload-btn" onclick="uploadResume()">Upload PDF</button>
+
+        <div id="output"></div>
+        ```
+
+    </div>
+
+    <script>
+        function displayResults(data) {
+            let html = "<h2> Top Matches</h2>";
+
+            data.results.forEach((item, index) => {
+                let color = index === 0 ? "#28a745" : "#007bff";
+
+                html += `
+        <div class="card" style="border-left: 6px solid ${color}">
+            <h3>${index === 0 ? "🥇 Best Match" : "⭐ Match " + (index + 1)}</h3>
+            <strong>${item.job}</strong><br>
+            Match Score: <b>${item.match_score.toFixed(2)}%</b><br>
+            ATS Score: <b>${item.ats_score.toFixed(2)}%</b>
+        </div>
+        `;
+            });
+
+            html += "<div class='suggestions'><strong> Suggestions:</strong><br>";
+
+            data.suggestions.forEach(s => {
+                html += "• " + s + "<br>";
+            });
+
+            html += "</div>";
+
+            document.getElementById("output").innerHTML = html;
+        }
+
+
+        // TEXT ANALYSIS
+        async function analyze() {
+            const resume = document.getElementById("resume").value;
+
+            if (!resume) {
+                alert(" Please enter your resume!");
+                return;
+            }
+
+            document.getElementById("output").innerHTML = "<div class='loading'> Analyzing...</div>";
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/analyze", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        resume: resume
+                    })
+                });
+
+                if (!response.ok) throw new Error("Server error");
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                document.getElementById("output").innerHTML =
+                    "<div style='color:red;'> Error connecting to server!</div>";
+                console.error(error);
+            }
+        }
+
+
+        // PDF UPLOAD
+        async function uploadResume() {
+            const fileInput = document.getElementById("fileInput");
+
+            if (fileInput.files.length === 0) {
+                alert(" Please select a file!");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            document.getElementById("output").innerHTML = "<div class='loading'> Uploading & Analyzing...</div>";
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error("Upload failed");
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                document.getElementById("output").innerHTML =
+                    "<div style='color:red;'> File upload failed!</div>";
+                console.error(error);
+            }
+        }
+    </script>
+
+</body>
+
+</html>
