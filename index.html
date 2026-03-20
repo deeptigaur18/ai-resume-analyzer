@@ -1,11 +1,9 @@
 <!DOCTYPE html>
-
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
-
-    <title>AI Resume Analyzer</title>
+    <title>AI Resume Analyzer Pro</title>
 
     <style>
         body {
@@ -14,7 +12,7 @@
             margin: 0;
             padding: 0;
         }
-        
+
         .container {
             max-width: 800px;
             margin: 40px auto;
@@ -23,12 +21,17 @@
             border-radius: 12px;
             box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.2);
         }
-        
+
         h1 {
             text-align: center;
             color: #333;
         }
-        
+
+        p {
+            text-align: center;
+            color: #666;
+        }
+
         textarea {
             width: 100%;
             padding: 12px;
@@ -37,11 +40,11 @@
             margin-top: 10px;
             font-size: 14px;
         }
-        
+
         input[type="file"] {
             margin-top: 15px;
         }
-        
+
         .btn {
             padding: 10px 15px;
             margin-top: 10px;
@@ -51,88 +54,116 @@
             color: white;
             font-weight: bold;
         }
-        
+
         .analyze-btn {
             background: #28a745;
         }
-        
+
         .upload-btn {
             background: #007bff;
         }
-        
+
+        .clear-btn {
+            background: #dc3545;
+        }
+
         .btn:hover {
             opacity: 0.9;
         }
-        
+
         #output {
             margin-top: 20px;
         }
-        
+
         .card {
             background: #f8f9fa;
             padding: 15px;
             margin-top: 12px;
             border-radius: 10px;
         }
-        
+
         .suggestions {
             margin-top: 20px;
             background: #fff3cd;
             padding: 15px;
             border-radius: 10px;
         }
-        
+
         .loading {
             text-align: center;
             font-weight: bold;
         }
-    </style>
-    ```
 
+        .bar {
+            background: #ddd;
+            border-radius: 6px;
+            margin: 5px 0 10px 0;
+        }
+
+        .fill {
+            height: 10px;
+            border-radius: 6px;
+        }
+    </style>
 </head>
 
 <body>
 
     <div class="container">
 
-        ```
-        <h1>🚀 AI Resume Analyzer</h1>
+        <h1>AI Resume Analyzer Pro</h1>
+        <p>Analyze your resume using AI and ATS scoring</p>
 
         <label><b>Paste your resume:</b></label>
         <textarea id="resume" rows="6" placeholder="Paste your resume here..."></textarea>
 
+        <br>
         <button class="btn analyze-btn" onclick="analyze()">Analyze Text</button>
+        <button class="btn clear-btn" onclick="clearText()">Clear</button>
 
         <hr>
 
         <label><b>Or upload PDF resume:</b></label>
-        <input type="file" id="fileInput">
+        <input type="file" id="fileInput" accept=".pdf">
         <br>
         <button class="btn upload-btn" onclick="uploadResume()">Upload PDF</button>
 
         <div id="output"></div>
-        ```
 
     </div>
 
     <script>
+        const BASE_URL = "https://ai-resume-backend.onrender.com"; // CHANGE if your URL differs
+
         function displayResults(data) {
-            let html = "<h2> Top Matches</h2>";
+            let html = "<h2>Top Matches</h2>";
 
             data.results.forEach((item, index) => {
                 let color = index === 0 ? "#28a745" : "#007bff";
 
                 html += `
-        <div class="card" style="border-left: 6px solid ${color}">
-            <h3>${index === 0 ? "🥇 Best Match" : "⭐ Match " + (index + 1)}</h3>
-            <strong>${item.job}</strong><br>
-            Match Score: <b>${item.match_score.toFixed(2)}%</b><br>
-            ATS Score: <b>${item.ats_score.toFixed(2)}%</b>
-        </div>
-        `;
+                <div class="card" style="border-left: 6px solid ${color}">
+                    <h3>${index === 0 ? "Best Match" : "Match " + (index + 1)}</h3>
+                    <strong>${item.job_title || item.job}</strong><br><br>
+
+                    Match Score: <b>${item.match_score.toFixed(2)}%</b>
+                    <div class="bar">
+                        <div class="fill" style="width:${item.match_score}%; background:#28a745;"></div>
+                    </div>
+
+                    ATS Score: <b>${item.ats_score.toFixed(2)}%</b>
+                    <div class="bar">
+                        <div class="fill" style="width:${item.ats_score}%; background:#007bff;"></div>
+                    </div>
+
+                    ${item.matched_keywords ? 
+                        "<b>Matched Skills:</b> " + item.matched_keywords.join(", ") 
+                        : ""}
+                </div>
+                `;
             });
 
-            html += "<div class='suggestions'><strong> Suggestions:</strong><br>";
+            html += "<div class='suggestions'><strong>Suggestions:</strong><br>";
 
             data.suggestions.forEach(s => {
                 html += "• " + s + "<br>";
@@ -143,72 +174,67 @@
             document.getElementById("output").innerHTML = html;
         }
 
-
-        // TEXT ANALYSIS
         async function analyze() {
             const resume = document.getElementById("resume").value;
 
             if (!resume) {
-                alert(" Please enter your resume!");
+                alert("Please enter your resume");
                 return;
             }
 
-            document.getElementById("output").innerHTML = "<div class='loading'> Analyzing...</div>";
+            document.getElementById("output").innerHTML =
+                "<div class='loading'>Analyzing your resume...</div>";
 
             try {
-                const response = await fetch("http://127.0.0.1:8000/analyze", {
+                const response = await fetch(`${BASE_URL}/analyze`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({
-                        resume: resume
-                    })
+                    body: JSON.stringify({ resume: resume })
                 });
-
-                if (!response.ok) throw new Error("Server error");
 
                 const data = await response.json();
                 displayResults(data);
 
             } catch (error) {
                 document.getElementById("output").innerHTML =
-                    "<div style='color:red;'> Error connecting to server!</div>";
-                console.error(error);
+                    "<div style='color:red;'>Error connecting to server</div>";
             }
         }
 
-
-        // PDF UPLOAD
         async function uploadResume() {
             const fileInput = document.getElementById("fileInput");
 
             if (fileInput.files.length === 0) {
-                alert(" Please select a file!");
+                alert("Please select a file");
                 return;
             }
 
             const formData = new FormData();
             formData.append("file", fileInput.files[0]);
 
-            document.getElementById("output").innerHTML = "<div class='loading'> Uploading & Analyzing...</div>";
+            document.getElementById("output").innerHTML =
+                "<div class='loading'>Uploading and analyzing...</div>";
 
             try {
-                const response = await fetch("http://127.0.0.1:8000/upload", {
+                const response = await fetch(`${BASE_URL}/upload`, {
                     method: "POST",
                     body: formData
                 });
-
-                if (!response.ok) throw new Error("Upload failed");
 
                 const data = await response.json();
                 displayResults(data);
 
             } catch (error) {
                 document.getElementById("output").innerHTML =
-                    "<div style='color:red;'> File upload failed!</div>";
-                console.error(error);
+                    "<div style='color:red;'>Upload failed</div>";
             }
+        }
+
+        function clearText() {
+            document.getElementById("resume").value = "";
+            document.getElementById("output").innerHTML = "";
         }
     </script>
 
