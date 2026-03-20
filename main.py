@@ -7,7 +7,6 @@ import pdfplumber
 
 app = FastAPI()
 
-# CORS (allow frontend to connect)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,21 +15,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Request schema
 class ResumeRequest(BaseModel):
     resume: str
 
-
-# Home route
 @app.get("/")
 def home():
     return {"message": "AI Resume Analyzer Running"}
 
-
-# TEXT INPUT API
 @app.post("/analyze")
 def analyze_resume(req: ResumeRequest):
-
     if not req.resume.strip():
         return {"error": "Resume cannot be empty"}
 
@@ -46,7 +39,6 @@ def analyze_resume(req: ResumeRequest):
             "ats_score": ats_score
         })
 
-    # Sort and take top 3
     results = sorted(results, key=lambda x: x["match_score"], reverse=True)[:3]
 
     suggestions = get_resume_feedback(req.resume)
@@ -56,11 +48,8 @@ def analyze_resume(req: ResumeRequest):
         "suggestions": suggestions
     }
 
-
-# PDF UPLOAD API
 @app.post("/upload")
 async def upload_resume(file: UploadFile = File(...)):
-
     text = ""
 
     try:
@@ -85,7 +74,6 @@ async def upload_resume(file: UploadFile = File(...)):
             "ats_score": ats_score
         })
 
-    # Sort and take top 3
     results = sorted(results, key=lambda x: x["match_score"], reverse=True)[:3]
 
     suggestions = get_resume_feedback(text)
